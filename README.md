@@ -172,3 +172,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 *Built with ❤️ for safer communities worldwide*
+Contact Address - 0xd9145CCE52D386f254917e481eB44e9943F39138
