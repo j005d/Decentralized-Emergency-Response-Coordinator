@@ -1,0 +1,336 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+/**
+ * @title Decentralized Emergency Response Coordinator
+ * @dev A smart contract system for managing emergency reports, coordinating responders, and allocating resources
+ * @author Emergency Response Team
+ */
+contract EmergencyResponseCoordinator {
+    
+    // Struct definitions
+    struct Emergency {
+        uint256 id;
+        address reporter;
+        string description;
+        string location;
+        EmergencyType emergencyType;
+        EmergencyStatus status;
+        uint256 timestamp;
+        uint256 priority; // 1-5 scale (5 being highest)
+        address[] assignedResponders;
+        uint256 resourcesAllocated;
+    }
+    
+    struct Responder {
+        address responderAddress;
+        string name;
+        ResponderType responderType;
+        bool isActive;
+        bool isAvailable;
+        string currentLocation;
+        uint256 totalEmergenciesHandled;
+        uint256 rating; // Average rating out of 100
+    }
+    
+    struct Resource {
+        uint256 id;
+        string name;
+        uint256 quantity;
+        string location;
+        bool isAvailable;
+    }
+    
+    // Enums
+    enum EmergencyType { MEDICAL, FIRE, POLICE, NATURAL_DISASTER, ACCIDENT }
+    enum EmergencyStatus { REPORTED, ASSIGNED, IN_PROGRESS, RESOLVED, CANCELLED }
+    enum ResponderType { MEDICAL, FIRE_DEPARTMENT, POLICE, RESCUE_TEAM, VOLUNTEER }
+    
+    // State variables
+    mapping(uint256 => Emergency) public emergencies;
+    mapping(address => Responder) public responders;
+    mapping(uint256 => Resource) public resources;
+    mapping(address => bool) public authorizedPersonnel;
+    
+    uint256 public emergencyCounter;
+    uint256 public resourceCounter;
+    address public admin;
+    
+    // Events
+    event EmergencyReported(uint256 indexed emergencyId, address indexed reporter, EmergencyType emergencyType, uint256 priority);
+    event ResponderAssigned(uint256 indexed emergencyId, address indexed responder);
+    event EmergencyStatusUpdated(uint256 indexed emergencyId, EmergencyStatus newStatus);
+    event ResponderRegistered(address indexed responder, ResponderType responderType);
+    event ResourceAllocated(uint256 indexed emergencyId, uint256 indexed resourceId, uint256 quantity);
+    
+    // Modifiers
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
+    
+    modifier onlyAuthorized() {
+        require(authorizedPersonnel[msg.sender] || msg.sender == admin, "Not authorized");
+        _;
+    }
+    
+    modifier onlyActiveResponder() {
+        require(responders[msg.sender].isActive, "Not an active responder");
+        _;
+    }
+    
+    modifier emergencyExists(uint256 _emergencyId) {
+        require(_emergencyId > 0 && _emergencyId <= emergencyCounter, "Emergency does not exist");
+        _;
+    }
+    
+    // Constructor
+    constructor() {
+        admin = msg.sender;
+        authorizedPersonnel[msg.sender] = true;
+        emergencyCounter = 0;
+        resourceCounter = 0;
+    }
+    
+    /**
+     * @dev Core Function 1: Report Emergency
+     * @param _description Description of the emergency
+     * @param _location Location of the emergency
+     * @param _emergencyType Type of emergency
+     * @param _priority Priority level (1-5)
+     */
+    function reportEmergency(
+        string memory _description,
+        string memory _location,
+        EmergencyType _emergencyType,
+        uint256 _priority
+    ) external returns (uint256) {
+        require(bytes(_description).length > 0, "Description cannot be empty");
+        require(bytes(_location).length > 0, "Location cannot be empty");
+        require(_priority >= 1 && _priority <= 5, "Priority must be between 1 and 5");
+        
+        emergencyCounter++;
+        
+        Emergency storage newEmergency = emergencies[emergencyCounter];
+        newEmergency.id = emergencyCounter;
+        newEmergency.reporter = msg.sender;
+        newEmergency.description = _description;
+        newEmergency.location = _location;
+        newEmergency.emergencyType = _emergencyType;
+        newEmergency.status = EmergencyStatus.REPORTED;
+        newEmergency.timestamp = block.timestamp;
+        newEmergency.priority = _priority;
+        newEmergency.resourcesAllocated = 0;
+        
+        emit EmergencyReported(emergencyCounter, msg.sender, _emergencyType, _priority);
+        
+        return emergencyCounter;
+    }
+    
+    /**
+     * @dev Core Function 2: Assign Responders to Emergency
+     * @param _emergencyId ID of the emergency
+     * @param _responders Array of responder addresses to assign
+     */
+    function assignResponders(
+        uint256 _emergencyId,
+        address[] memory _responders
+    ) external onlyAuthorized emergencyExists(_emergencyId) {
+        Emergency storage emergency = emergencies[_emergencyId];
+        require(emergency.status == EmergencyStatus.REPORTED, "Emergency is not in reported status");
+        
+        for (uint i = 0; i < _responders.length; i++) {
+            require(responders[_responders[i]].isActive, "Responder is not active");
+            require(responders[_responders[i]].isAvailable, "Responder is not available");
+            
+            emergency.assignedResponders.push(_responders[i]);
+            responders[_responders[i]].isAvailable = false;
+            
+            emit ResponderAssigned(_emergencyId, _responders[i]);
+        }
+        
+        emergency.status = EmergencyStatus.ASSIGNED;
+        emit EmergencyStatusUpdated(_emergencyId, EmergencyStatus.ASSIGNED);
+    }
+    
+    /**
+     * @dev Core Function 3: Allocate Resources to Emergency
+     * @param _emergencyId ID of the emergency
+     * @param _resourceId ID of the resource to allocate
+     * @param _quantity Quantity of resources to allocate
+     */
+    function allocateResources(
+        uint256 _emergencyId,
+        uint256 _resourceId,
+        uint256 _quantity
+    ) external onlyAuthorized emergencyExists(_emergencyId) {
+        require(_resourceId > 0 && _resourceId <= resourceCounter, "Resource does not exist");
+        require(_quantity > 0, "Quantity must be greater than 0");
+        
+        Resource storage resource = resources[_resourceId];
+        require(resource.isAvailable, "Resource is not available");
+        require(resource.quantity >= _quantity, "Insufficient resource quantity");
+        
+        Emergency storage emergency = emergencies[_emergencyId];
+        require(emergency.status == EmergencyStatus.ASSIGNED || emergency.status == EmergencyStatus.IN_PROGRESS, 
+                "Emergency must be assigned or in progress");
+        
+        // Allocate resources
+        resource.quantity -= _quantity;
+        emergency.resourcesAllocated += _quantity;
+        
+        if (resource.quantity == 0) {
+            resource.isAvailable = false;
+        }
+        
+        emit ResourceAllocated(_emergencyId, _resourceId, _quantity);
+    }
+    
+    // Additional utility functions
+    
+    /**
+     * @dev Register a new responder
+     */
+    function registerResponder(
+        address _responder,
+        string memory _name,
+        ResponderType _responderType,
+        string memory _location
+    ) external onlyAuthorized {
+        require(!responders[_responder].isActive, "Responder already registered");
+        
+        responders[_responder] = Responder({
+            responderAddress: _responder,
+            name: _name,
+            responderType: _responderType,
+            isActive: true,
+            isAvailable: true,
+            currentLocation: _location,
+            totalEmergenciesHandled: 0,
+            rating: 100
+        });
+        
+        emit ResponderRegistered(_responder, _responderType);
+    }
+    
+    /**
+     * @dev Add a new resource
+     */
+    function addResource(
+        string memory _name,
+        uint256 _quantity,
+        string memory _location
+    ) external onlyAuthorized returns (uint256) {
+        resourceCounter++;
+        
+        resources[resourceCounter] = Resource({
+            id: resourceCounter,
+            name: _name,
+            quantity: _quantity,
+            location: _location,
+            isAvailable: true
+        });
+        
+        return resourceCounter;
+    }
+    
+    /**
+     * @dev Update emergency status
+     */
+    function updateEmergencyStatus(
+        uint256 _emergencyId,
+        EmergencyStatus _newStatus
+    ) external onlyActiveResponder emergencyExists(_emergencyId) {
+        Emergency storage emergency = emergencies[_emergencyId];
+        
+        // Check if the responder is assigned to this emergency
+        bool isAssigned = false;
+        for (uint i = 0; i < emergency.assignedResponders.length; i++) {
+            if (emergency.assignedResponders[i] == msg.sender) {
+                isAssigned = true;
+                break;
+            }
+        }
+        require(isAssigned, "Responder not assigned to this emergency");
+        
+        emergency.status = _newStatus;
+        
+        // If emergency is resolved, make responders available again
+        if (_newStatus == EmergencyStatus.RESOLVED) {
+            for (uint i = 0; i < emergency.assignedResponders.length; i++) {
+                responders[emergency.assignedResponders[i]].isAvailable = true;
+                responders[emergency.assignedResponders[i]].totalEmergenciesHandled++;
+            }
+        }
+        
+        emit EmergencyStatusUpdated(_emergencyId, _newStatus);
+    }
+    
+    /**
+     * @dev Authorize personnel
+     */
+    function authorizePersonnel(address _personnel) external onlyAdmin {
+        authorizedPersonnel[_personnel] = true;
+    }
+    
+    /**
+     * @dev Get emergency details
+     */
+    function getEmergency(uint256 _emergencyId) external view emergencyExists(_emergencyId) 
+        returns (
+            uint256 id,
+            address reporter,
+            string memory description,
+            string memory location,
+            EmergencyType emergencyType,
+            EmergencyStatus status,
+            uint256 timestamp,
+            uint256 priority,
+            uint256 resourcesAllocated
+        ) {
+        Emergency storage emergency = emergencies[_emergencyId];
+        return (
+            emergency.id,
+            emergency.reporter,
+            emergency.description,
+            emergency.location,
+            emergency.emergencyType,
+            emergency.status,
+            emergency.timestamp,
+            emergency.priority,
+            emergency.resourcesAllocated
+        );
+    }
+    
+    /**
+     * @dev Get responder details
+     */
+    function getResponder(address _responder) external view returns (
+        string memory name,
+        ResponderType responderType,
+        bool isActive,
+        bool isAvailable,
+        string memory currentLocation,
+        uint256 totalEmergenciesHandled,
+        uint256 rating
+    ) {
+        Responder storage responder = responders[_responder];
+        return (
+            responder.name,
+            responder.responderType,
+            responder.isActive,
+            responder.isAvailable,
+            responder.currentLocation,
+            responder.totalEmergenciesHandled,
+            responder.rating
+        );
+    }
+    
+    /**
+     * @dev Get assigned responders for an emergency
+     */
+    function getAssignedResponders(uint256 _emergencyId) external view emergencyExists(_emergencyId) 
+        returns (address[] memory) {
+        return emergencies[_emergencyId].assignedResponders;
+    }
+}
