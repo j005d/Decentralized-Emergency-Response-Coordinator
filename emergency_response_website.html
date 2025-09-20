@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DERC - Decentralized Emergency Response Coordinator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #0a0a0a;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #4ecdc4;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)" /></svg>');
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(10px, 10px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(76, 205, 196, 0.3);
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 3rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            color: white;
+            box-shadow: 0 10px 30px rgba(76, 205, 196, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(76, 205, 196, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 8rem 0;
+            background: #0f0f0f;
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-title p {
+            font-size: 1.2rem;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(76, 205, 196, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .feature-list li {
+            color: #aaa;
+            padding: 0.3rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        /* Vision Section */
+        .vision {
+            padding: 8rem 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            position: relative;
+        }
+
+        .vision-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .vision-text h2 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .vision-text p {
+            color: #ccc;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .vision-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .vision-point {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .vision-point h4 {
+            color: #4ecdc4;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .vision-point p {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        /* Stats Section */
+        .stats {
+            background: #0a0a0a;
+            padding: 6rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            background: #050505;
+            padding: 4rem 0 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .footer-section p,
+        .footer-section a {
+            color: #888;
+            text-decoration: none;
+            line-height: 1.6;
+            display: block;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #4ecdc4;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            color: #666;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .vision-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+        .feature-card:nth-child(5) { animation-delay: 0.5s; }
+        .feature-card:nth-child(6) { animation-delay: 0.6s; }
+
+        /* Floating elements animation */
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="#" class="logo">DERC</a>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#vision">Vision</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="floating">DERC</h1>
+                <p class="hero-subtitle">Decentralized Emergency Response Coordinator</p>
+                <p style="color: #ccc; font-size: 1.2rem; max-width: 900px; margin: 0 auto 2rem;">
+                    Revolutionary blockchain-based emergency response system that saves lives through transparent, 
+                    decentralized coordination of emergency services and resources.
+                </p>
+                <div class="cta-buttons">
+                    <a href="#features" class="btn btn-primary">Explore Features</a>
+                    <a href="#vision" class="btn btn-secondary">Our Vision</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Transparent Operations</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Continuous Availability</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Decentralized Network</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Single Points of Failure</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Revolutionary Features</h2>
+                <p>Cutting-edge blockchain technology meets emergency response to create an unparalleled coordination system</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">🚨</div>
+                    <h3>Emergency Reporting System</h3>
+                    <p>Direct blockchain reporting with automatic categorization and immutable timestamps.</p>
+                    <ul class="feature-list">
+                        <li>Automatic emergency categorization</li>
+                        <li>Priority-based classification (1-5 scale)</li>
+                        <li>Real-time status tracking</li>
+                        <li>Immutable location recording</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">👥</div>
+                    <h3>Responder Coordination</h3>
+                    <p>Intelligent network connecting all types of emergency responders with automated assignment.</p>
+                    <ul class="feature-list">
+                        <li>Multi-type responder registration</li>
+                        <li>Automated assignment system</li>
+                        <li>Real-time availability management</li>
+                        <li>Performance tracking & ratings</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📦</div>
+                    <h3>Resource Management</h3>
+                    <p>Smart contract-based resource allocation with real-time tracking and automated distribution.</p>
+                    <ul class="feature-list">
+                        <li>Digital inventory management</li>
+                        <li>Real-time allocation tracking</li>
+                        <li>Location-based distribution</li>
+                        <li>Automated shortage alerts</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Security & Access Control</h3>
+                    <p>Role-based access control ensuring secure operations while maintaining transparency.</p>
+                    <ul class="feature-list">
+                        <li>Multi-role access control</li>
+                        <li>Secure authentication system</li>
+                        <li>Admin personnel management</li>
+                        <li>Emergency report verification</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">📊</div>
+                    <h3>Transparency & Accountability</h3>
+                    <p>Complete audit trail with public oversight capabilities for maximum accountability.</p>
+                    <ul class="feature-list">
+                        <li>Complete activity audit trail</li>
+                        <li>Public response time visibility</li>
+                        <li>Immutable legal records</li>
+                        <li>Community oversight tools</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-time Updates</h3>
+                    <p>Event-driven notification system providing instant updates across the entire network.</p>
+                    <ul class="feature-list">
+                        <li>Instant notification system</li>
+                        <li>Status change broadcasting</li>
+                        <li>Automated availability updates</li>
+                        <li>Resource allocation alerts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision Section -->
+    <section class="vision" id="vision">
+        <div class="container">
+            <div class="vision-content">
+                <div class="vision-text">
+                    <h2>Our Vision</h2>
+                    <p>
+                        We envision a world where emergency response is not hindered by centralized bottlenecks, 
+                        bureaucratic delays, or lack of transparency. Our blockchain-based system creates a 
+                        revolutionary approach to emergency coordination.
+                    </p>
+                    <p>
+                        By leveraging the power of decentralization, we eliminate single points of failure 
+                        and create a resilient network that operates 24/7, ensuring that help is always 
+                        available when and where it's needed most.
+                    </p>
+                </div>
+                <div class="vision-points">
+                    <div class="vision-point">
+                        <h4>🚀 Saves Lives</h4>
+                        <p>Reduce response times through automated coordination and real-time resource tracking</p>
+                    </div>
+                    <div class="vision-point">
+                        <h4>🔍 Ensures Transparency</h4>
+                        <p>Immutable records of all emergency activities for complete accountability</p>
+                    </div>
+                    <div class="vision-point">
+                        <h4>🛡️ Eliminates Failures</h4>
+                        <p>Resilient system continues operating even when individual nodes fail</p>
+                    </div>
+                    <div class="vision-point">
+                        <h4>🌍 Democratizes Response</h4>
+                        <p>Community-driven emergency response with direct citizen participation</p>
+                    </div>
+                    <div class="vision-point">
+                        <h4>⚙️ Optimizes Resources</h4>
+                        <p>Smart contract automation improves emergency resource utilization</p>
+                    </div>
+                    <div class="vision-point">
+                        <h4>🤝 Builds Trust</h4>
+                        <p>Trustless system where all participants can verify response activities</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>DERC Project</h3>
+                    <p>Revolutionizing emergency response through blockchain technology, creating a transparent, efficient, and decentralized coordination system.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Key Features</h3>
+                    <a href="#features">Emergency Reporting</a>
+                    <a href="#features">Responder Coordination</a>
+                    <a href="#features">Resource Management</a>
+                    <a href="#features">Real-time Updates</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Technology</h3>
+                    <a href="#">Blockchain Network</a>
+                    <a href="#">Smart Contracts</a>
+                    <a href="#">Decentralized Architecture</a>
+                    <a href="#">Security Protocols</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <a href="#">Join Network</a>
+                    <a href="#">Developer Resources</a>
+                    <a href="#">Documentation</a>
+                    <a href="#">Support</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Decentralized Emergency Response Coordinator (DERC). Building the future of emergency response.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(10, 10, 10, 0.98)';
+                header.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+            } else {
+                header.style.background = 'rgba(10, 10, 10, 0.95)';
+                header.style.boxShadow = 'none';
+            }
+        });
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all fade-in elements
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Animated counter for stats
+        const animateCounters = () => {
+            const counters = document.querySelectorAll('.stat-number');
+            
+            counters.forEach(counter => {
+                const target = counter.textContent;
+                let count = 0;
+                
+                // Handle special cases
+                if (target === '∞') return;
+                if (target === '0') {
+                    counter.textContent = '0';
+                    return;
+                }
+                
+                const increment = target.includes('%') ? 2 : 1;
+                const finalValue = parseInt(target.replace('%', ''));
+                
+                const updateCounter = () => {
+                    if (count < finalValue) {
+                        count += increment;
+                        counter.textContent = count + (target.includes('%') ? '%' : '');
+                        setTimeout(updateCounter, 30);
+                    } else {
+                        counter.textContent = target;
+                    }
+                };
+                
+                updateCounter();
+            });
+        };
+
+        // Trigger counter animation when stats section is visible
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    statsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const statsSection = document.querySelector('.stats');
+        if (statsSection) {
+            statsObserver.observe(statsSection);
+        }
+
+        // Particle effect for hero background
+        const createParticles = () => {
+            const hero = document.querySelector('.hero');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    width: 2px;
+                    height: 2px;
+                    background: rgba(76, 205, 196, 0.3);
+                    border-radius: 50%;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation: float ${3 + Math.random() * 4}s ease-in-out infinite;
+                    animation-delay: ${Math.random() * 2}s;
+                    z-index: 1;
+                `;
+                hero.appendChild(particle);
+            }
+        };
+
+        // Add floating animation for particles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0%, 100% { 
+                    transform: translate(0, 0) scale(1); 
+                    opacity: 0.3;
+                }
+                50% { 
+                    transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(1.5); 
+                    opacity: 0.8;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize particles
+        createParticles();
+
+        // Add interactive hover effects for feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+                this.style.boxShadow = '0 25px 50px rgba(76, 205, 196, 0.15)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+                this.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3)';
+            });
+        });
+
+        // Mobile menu toggle (if needed in future)
+        const createMobileMenu = () => {
+            const nav = document.querySelector('.nav');
+            const menuButton = document.createElement('button');
+            menuButton.innerHTML = '☰';
+            menuButton.style.cssText = `
+                display: none;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+            `;
+            
+            // Add responsive behavior
+            const mediaQuery = window.matchMedia('(max-width: 768px)');
+            const handleResponsive = (e) => {
+                if (e.matches) {
+                    menuButton.style.display = 'block';
+                } else {
+                    menuButton.style.display = 'none';
+                }
+            };
+            
+            mediaQuery.addListener(handleResponsive);
+            handleResponsive(mediaQuery);
+            
+            nav.appendChild(menuButton);
+        };
+
+        createMobileMenu();
+
+        // Dynamic background gradient animation
+        const animateGradient = () => {
+            const hero = document.querySelector('.hero');
+            let hue = 0;
+            
+            setInterval(() => {
+                hue = (hue + 1) % 360;
+                const gradient = `linear-gradient(135deg, 
+                    hsl(${hue}, 50%, 5%) 0%, 
+                    hsl(${(hue + 30) % 360}, 60%, 10%) 50%, 
+                    hsl(${(hue + 60) % 360}, 70%, 15%) 100%)`;
+                hero.style.background = gradient;
+            }, 100);
+        };
+
+        // Uncomment to enable dynamic background
+        // animateGradient();
+
+        // Performance optimization: Debounced scroll handler
+        let scrollTimeout;
+        const handleScroll = () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                // Scroll-based animations can be added here
+            }, 10);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        // Add loading animation
+        const addLoadingAnimation = () => {
+            document.body.style.opacity = '0';
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    document.body.style.transition = 'opacity 0.5s ease';
+                    document.body.style.opacity = '1';
+                }, 100);
+            });
+        };
+
+        addLoadingAnimation();
+    </script>
+</body>
+</html>
+            
